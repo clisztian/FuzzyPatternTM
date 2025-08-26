@@ -1,0 +1,37 @@
+plugins {
+    id 'org.openjfx.javafxplugin' version '0.0.7'
+}
+
+javafx {
+    modules = ['javafx.controls', 'javafx.graphics', 'javafx.base', 'javafx.fxml']
+    version = "17.0.1"
+}
+
+group = 'ai.tsetlin'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.9.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation group: 'com.opencsv', name: 'opencsv', version: '5.9'
+    implementation group: 'net.sourceforge.javacsv', name: 'javacsv', version: '2.0'
+    implementation 'org.slf4j:slf4j-api:2.0.9'
+    implementation 'org.slf4j:slf4j-simple:2.0.9' // For simple logging
+    implementation 'org.slf4j:jul-to-slf4j:2.0.9' // Redirect java.util.logging to SLF4J
+    implementation group: 'joda-time', name: 'joda-time', version: '2.10.8'
+    implementation group: 'dev.brachtendorf', name: 'pcg-java-10', version: '1.0.1'
+
+    implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
+// https://mvnrepository.com/artifact/org.apache.commons/commons-math3
+    implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'
+// https://mvnrepository.com/artifact/org.apache.commons/commons-lang3
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: '3.13.0'
+}
+
+test {
+    useJUnitPlatform()
+}
