@@ -193,7 +193,7 @@ public class TMClassifier {
 
 
 
-    public void updateFuzzy(int Xi[], int target) {
+    public void updateFuzzyAlt(int Xi[], int target) {
         // --- 1) votes & Julia's v ---
         // class_sum is pos - neg with your current implementation.
         int class_sum = sum_up_class_votes(Xi);
@@ -352,7 +352,7 @@ public class TMClassifier {
     // Drop-in: mirrors the Julia feedback! logic using fuzzy clause residuals.
 // Requires: clauseResidual(int[] Xi, int j), inc(...), dec(...), initialize_random_streams(j),
 //           fields T, nClauses, la_chunks, state_bits, filter, rng, weighted, clause_weights[], maxLiterals.
-    public void updateFuzzyJuliaEquivalent(int[] Xi, int target) {
+    public void updateFuzzy(int[] Xi, int target) {
         // 1) Votes & Julia's v
         int class_sum = sum_up_class_votes(Xi); // sum of (pos residuals) - (neg residuals), clamped internally or below
         int v = -class_sum;                     // Julia: v = -(pos - neg)
@@ -410,19 +410,19 @@ public class TMClassifier {
                 } else {
                     // Clause didn't match: random shrink (Julia: tm.s random decs)
 
-                    int twoN = 2 * nFeatures; // literals + their negations (same space as your la_chunks)
-
-                    for (int rep = 0; rep < this.s; rep++) {
-                        int i = rng.nextInt(twoN);
-                        dec(j, i / 32, 1 << (i % 32)); // first random literal
-
-                        i = rng.nextInt(twoN);
-                        dec(j, i / 32, 1 << (i % 32)); // second random literal (mirrors c[i] / ci[i])
-                    }
-
-//                    for (int k = 0; k < la_chunks; ++k) {
-//                        dec(j, k, feedback_to_la[k]);
+//                    int twoN = 2 * nFeatures; // literals + their negations (same space as your la_chunks)
+//
+//                    for (int rep = 0; rep < this.s; rep++) {
+//                        int i = rng.nextInt(twoN);
+//                        dec(j, i / 32, 1 << (i % 32)); // first random literal
+//
+//                        i = rng.nextInt(twoN);
+//                        dec(j, i / 32, 1 << (i % 32)); // second random literal (mirrors c[i] / ci[i])
 //                    }
+
+                    for (int k = 0; k < la_chunks; ++k) {
+                        dec(j, k, feedback_to_la[k]);
+                    }
                 }
             }
         }

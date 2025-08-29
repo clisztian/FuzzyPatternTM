@@ -24,7 +24,7 @@ dependencies {
     implementation 'org.slf4j:jul-to-slf4j:2.0.9' // Redirect java.util.logging to SLF4J
     implementation group: 'joda-time', name: 'joda-time', version: '2.10.8'
     implementation group: 'dev.brachtendorf', name: 'pcg-java-10', version: '1.0.1'
-
+    implementation group: 'com.jfoenix', name: 'jfoenix', version: '9.0.10'
     implementation group: 'org.apache.commons', name: 'commons-collections4', version: '4.4'
 // https://mvnrepository.com/artifact/org.apache.commons/commons-math3
     implementation group: 'org.apache.commons', name: 'commons-math3', version: '3.6.1'

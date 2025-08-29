@@ -1,11 +1,15 @@
 package ai.tsetlin.examples;
 
+import ai.graphics.AccuracyPlotCanvas;
 import ai.record.AnyRecord;
 import ai.record.CSVInterface;
 import ai.record.CategoryLabel;
 import ai.record.Evolutionize;
 import ai.tsetlin.GraphAttentionLearning;
 import ai.tsetlin.GraphEncoder;
+import javafx.application.Application;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,12 +18,25 @@ import java.util.HashMap;
 import java.util.Random;
 import java.util.logging.Logger;
 
-public class IrisExample {
+public class IrisExample extends Application {
 
-    public IrisExample() throws IOException, IllegalAccessException {
+    //Logger
+    Logger logger = Logger.getLogger(IrisExample.class.getName());
 
-        //Logger
-        Logger logger = Logger.getLogger(IrisExample.class.getName());
+
+    private ArrayList<AnyRecord> records;
+    //create two sets of random records
+    ArrayList<AnyRecord> train_set = new ArrayList<AnyRecord>();
+    ArrayList<AnyRecord> test_set = new ArrayList<AnyRecord>();
+    CategoryLabel label;
+    int[][] Xi;
+    int[] Y;
+
+    Evolutionize evolution = new Evolutionize(1, 1);
+    private double[] accuracy;
+    private AccuracyPlotCanvas accuracyPlotCanvas = new AccuracyPlotCanvas();
+
+    public void pullData() throws IOException, IllegalAccessException {
 
 
         CSVInterface csv = new CSVInterface("data/iris.csv",4);
@@ -38,11 +55,9 @@ public class IrisExample {
         categoryMap.put("versicolor", 1);
         categoryMap.put("virginica", 2);
 
-        CategoryLabel label = new CategoryLabel(categoryMap);
+        label = new CategoryLabel(categoryMap);
+        records = csv.getAllRecords();
 
-        ArrayList<AnyRecord> records = csv.getAllRecords();
-
-        Evolutionize evolution = new Evolutionize(1, 1);
         evolution.initiate(anyrecord, 10);
         for(int i = 0; i < records.size(); i++) {
             evolution.addValue(records.get(i));
@@ -57,9 +72,7 @@ public class IrisExample {
         //shuffle the records
         Collections.shuffle(records, random);
 
-        //create two sets of random records
-        ArrayList<AnyRecord> train_set = new ArrayList<AnyRecord>();
-        ArrayList<AnyRecord> test_set = new ArrayList<AnyRecord>();
+
 
         for(int i = 0; i < train_set_size; i++) {
             AnyRecord record = records.get(i);
@@ -69,8 +82,8 @@ public class IrisExample {
             test_set.add(records.get(i));
         }
 
-        int[][] Xi = new int[train_set.size()][];
-        int[] Y = new int[train_set.size()];
+        Xi = new int[train_set.size()][];
+        Y = new int[train_set.size()];
         //create samples from train set
         for(int i = 0; i < train_set.size(); i++) {
             AnyRecord r = train_set.get(i);
@@ -80,25 +93,19 @@ public class IrisExample {
         }
 
 
+    }
 
 
 
 
-
-
+    public void compute(int epochs) throws IOException, IllegalAccessException {
 
         GraphEncoder encoder = new GraphEncoder(evolution.getEncoderDimension());
-
-
-
-
-
-
-        int nClauses = 10;
+        int nClauses = 3;
         int nClasses = 3;
 
-        int max_specificity = 40;
-        boolean boost = true;
+        int max_specificity = 30;
+        boolean boost = false;
         int LF = (int) (.80* encoder.getFeatureDimension());
 
         int threshold = (int) Math.sqrt((nClauses / 2f) * LF);
@@ -107,18 +114,13 @@ public class IrisExample {
         int max_literals = LF;
 
         //log the parameters
-        logger.info("nClauses: " + nClauses);
-        logger.info("nClasses: " + nClasses);
-        logger.info("max_specificity: " + max_specificity);
-        logger.info("LF: " + LF);
-        logger.info("threshold: " + threshold);
-        logger.info("max_literals: " + max_literals);
-        //log number of features
-        logger.info("number_of_features: " + encoder.getFeatureDimension());
 
         GraphAttentionLearning model = new GraphAttentionLearning(encoder, nClauses, nClasses,threshold, max_specificity,  boost, LF, max_literals);
 
-        for(int e = 0; e < 100; e++) {
+        int epocs = epochs;
+        accuracy = new double[epocs];
+
+        for(int e = 0; e < epocs; e++) {
 
             model.fit(Xi, Y, true);
 
@@ -131,20 +133,90 @@ public class IrisExample {
 
                 int predicted = model.predict(xi);
 
-                System.out.println("Predicted: " + predicted + " Actual: " + mylabel);
+                //System.out.println("Predicted: " + predicted + " Actual: " + mylabel);
 
                 if(predicted == mylabel) {
                     correct++;
                 }
             }
             logger.info("Epoch: " + e + " Accuracy: " + (correct / (float)test_set.size()));
+            accuracy[e] = (correct / (float)test_set.size());
+        }
+    }
 
+
+
+    public void compute(int epochs, int nClauses, int S, float fuzzyiness, int thresholdMult, boolean boostme) throws IOException, IllegalAccessException {
+
+
+        GraphEncoder encoder = new GraphEncoder(evolution.getEncoderDimension());
+
+        int nClasses = 3;
+
+        boolean boost = boostme;
+        int LF = (int) (fuzzyiness* encoder.getFeatureDimension());
+
+        int threshold = (int) Math.sqrt((nClauses / 2f) * LF) * thresholdMult;
+        //int threshold = nClauses * LF;
+
+        int max_literals = LF;
+
+
+        GraphAttentionLearning model = new GraphAttentionLearning(encoder, nClauses, nClasses,threshold, S,  boost, LF, max_literals);
+
+        int epocs = epochs;
+        accuracy = new double[epocs];
+
+        for(int e = 0; e < epocs; e++) {
+
+            model.fit(Xi, Y, true);
+
+            int correct = 0;
+            for(AnyRecord record : test_set) {
+
+                int mylabel = (int)label.getLabel(record.getLabel_name());
+                evolution.add(record);
+                int[] xi = evolution.get_last_sample();
+
+                int predicted = model.predict(xi);
+
+                //System.out.println("Predicted: " + predicted + " Actual: " + mylabel);
+
+                if(predicted == mylabel) {
+                    correct++;
+                }
+            }
+            logger.info("Epoch: " + e + " Accuracy: " + (correct / (float)test_set.size()));
+            accuracy[e] = (correct / (float)test_set.size());
         }
 
+    }
+
+
+
+    @Override
+    public void start(Stage stage) throws Exception {
+
+        int epochs = 500;
+
+
+        pullData();
+        compute(epochs, 3, 30, .8f, 1, true);
+
+        accuracyPlotCanvas.plotTimeSeriesData(accuracy);
+
+
+        Scene scene = new Scene(accuracyPlotCanvas.getvBox());
+        scene.getStylesheets().add(getClass().getClassLoader().getResource("css/Chart.css").toExternalForm());
+
+        stage.setScene(scene);
+        stage.show();
 
     }
 
-    public static void main(String[] args) throws IOException, IllegalAccessException {
-        IrisExample example = new IrisExample();
+    public static void main(String[] args) {
+        launch(args);
     }
 }
+
+
